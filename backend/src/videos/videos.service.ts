@@ -44,6 +44,12 @@ export class VideosService {
     'how',
     'why',
   ]);
+  private readonly overlapThreshold = Number(
+    process.env.TOPIC_OVERLAP_THRESHOLD ?? 3,
+  );
+  private readonly maxVideosPerChannel = Number(
+    process.env.MAX_VIDEOS_PER_CHANNEL ?? 100,
+  );
 
   constructor(
     @InjectRepository(Channel)
@@ -154,7 +160,7 @@ export class VideosService {
       for (const bucket of buckets) {
         const overlap = this.countOverlap(bucket.keywords, keywords);
         // Require higher overlap to avoid over-grouping unrelated videos
-        if (overlap >= 3) {
+        if (overlap >= this.overlapThreshold) {
           bucket.videos.push(video);
           for (const word of keywords) bucket.keywords.add(word);
           matched = true;
@@ -265,7 +271,7 @@ export class VideosService {
       });
     }
 
-    return videos;
+    return videos.slice(0, this.maxVideosPerChannel);
   }
 
   private extractTag(xml: string, tag: string): string | null {
